@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>중국어 단어 퀴즈</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=DM+Mono:wght@400;500&family=Pretendard:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #EEEEEE;
+      --surface: #FFFFFF;
+      --border: #DDDDDD;
+      --text: #1A1714;
+      --muted: #888888;
+      --accent: #C84B2F;
+      --accent-lt: #FAFAFA;
+      --ok: #2A6049;
+      --ok-lt: #FAFAFA;
+      --err: #C84B2F;
+      --err-lt: #EAEAEA;
+      --r: 10px;
+      --r-lg: 16px;
+      --font: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url('./assets/img/profile.png');
+      background-position: center;
+      background-repeat: no-repeat;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .header h1 {
+      font-family: var(--font);
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    /* File list */
+    .file-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .file-item:hover,
+    .file-item.selected {
+      border-color: var(--accent);
+      background: var(--accent-lt);
+    }
+
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      background: var(--border);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .file-item.selected .file-icon {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .file-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .file-check {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 50%;
+    }
+
+    .file-item.selected .file-check {
+      background: var(--accent);
+      border-color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .file-item.selected .file-check::after {
+      content: '';
+      display: block;
+      width: 5px;
+      height: 9px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(42deg) translateY(-1px);
+    }
+
+    /* Mode grid */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mode-item {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-item:hover,
+    .mode-item.selected {
+      border-color: var(--accent);
+      background: var(--accent-lt);
+    }
+
+    .mode-item.selected .mode-title {
+      color: var(--accent);
+    }
+
+    .mode-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .mode-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Buttons */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: var(--r);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--text);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: #333;
+    }
+
+    .btn:disabled {
+      background: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .btn-sec {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-sec:hover {
+      background: var(--border);
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      padding: 0;
+      margin-bottom: 1.5rem;
+      font-family: var(--font);
+      cursor: pointer;
+    }
+
+    .nav-back:hover {
+      color: var(--text);
+    }
+
+    /* Progress */
+    .quiz-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .prog-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* Question */
+    .q-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .q-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .q-main {
+      font-size: 52px;
+      font-family: var(--font);
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+
+    .q-sub {
+      font-size: 15px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .options {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .opt {
+      padding: 13px 16px;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      font-family: var(--font);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .opt:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: var(--accent-lt);
+    }
+
+    .opt.correct {
+      border-color: var(--ok);
+      background: var(--ok-lt);
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .opt.wrong {
+      border-color: var(--err);
+      background: var(--err-lt);
+      color: var(--err);
+    }
+
+    .opt:disabled {
+      cursor: not-allowed;
+    }
+
+    .type-area {
+      margin-bottom: 1rem;
+    }
+
+    .type-input {
+      width: 100%;
+      padding: 13px 16px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      font-family: var(--mono);
+      font-size: 16px;
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .type-input:focus {
+      border-color: var(--accent);
+    }
+
+    .type-input.correct {
+      border-color: var(--ok);
+      background: var(--ok-lt);
+    }
+
+    .type-input.wrong {
+      border-color: var(--err);
+      background: var(--err-lt);
+    }
+
+    .feedback {
+      display: none;
+      padding: 12px 16px;
+      border-radius: var(--r);
+      font-size: 13px;
+      margin-bottom: 1rem;
+    }
+
+    .feedback.correct {
+      background: var(--ok-lt);
+      color: var(--ok);
+    }
+
+    .feedback.wrong {
+      background: var(--err-lt);
+      color: var(--err);
+    }
+
+    /* Flashcard */
+    .flash-card {
+      min-height: 240px;
+      padding: 2rem 1.5rem;
+      margin-bottom: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .flash-card:hover {
+      border-color: #C0BAB0;
+    }
+
+    .flash-back {
+      display: none;
+      width: 100%;
+      border-top: 1px solid var(--border);
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+    }
+
+    .flash-pinyin {
+      font-size: 22px;
+      font-family: var(--mono);
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .flash-meaning {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .flash-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-ok,
+    .btn-err {
+      flex: 1;
+      padding: 13px;
+      border-radius: var(--r);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-ok {
+      border: 1px solid #9DC9B3;
+      background: var(--ok-lt);
+      color: var(--ok);
+    }
+
+    .btn-err {
+      border: 1px solid #F0B9AA;
+      background: var(--err-lt);
+      color: var(--err);
+    }
+
+    .btn-ok:hover {
+      background: #D5EDE5;
+    }
+
+    .btn-err:hover {
+      background: #FADFDA;
+    }
+
+    /* Result */
+    .result-score {
+      font-family: var(--font);
+      font-size: 64px;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: center;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .result-msg {
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .result-stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+      flex: 1;
+      padding: 14px;
+      border-radius: var(--r);
+      text-align: center;
+    }
+
+    .stat-box.ok {
+      background: var(--ok-lt);
+      color: var(--ok);
+    }
+
+    .stat-box.err {
+      background: var(--err-lt);
+      color: var(--err);
+    }
+
+    .stat-num {
+      font-size: 26px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    .stat-lbl {
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .review-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: var(--r);
+      font-size: 13px;
+    }
+
+    .review-item span:nth-child(1) {
+      font-size: 18px;
+      font-family: var(--font);
+      flex: 0 0 44px;
+    }
+
+    .review-item span:nth-child(2) {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      flex: 0 0 90px;
+    }
+
+    .review-item span:nth-child(3) {
+      color: var(--muted);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- HOME -->
+    <div id="home" class="screen active">
+      <div class="header">
+        <h1>중국어 단어 퀴즈</h1>
+        <p>단어 세트를 선택하고 퀴즈를 시작하세요</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">단어 세트 선택</div>
+        <div class="file-grid" id="file-grid">
+          <div class="empty">파일을 불러오는 중...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">퀴즈 유형</div>
+        <div class="mode-grid">
+          <div class="mode-item selected" data-mode="mc-meaning" onclick="selectMode(this)">
+            <div class="mode-title">한자 → 뜻</div>
+            <div class="mode-desc">4지선다</div>
+          </div>
+          <div class="mode-item" data-mode="mc-pinyin" onclick="selectMode(this)">
+            <div class="mode-title">한자 → 병음</div>
+            <div class="mode-desc">4지선다</div>
+          </div>
+          <div class="mode-item" data-mode="mc-hanzi" onclick="selectMode(this)">
+            <div class="mode-title">뜻 → 한자</div>
+            <div class="mode-desc">4지선다</div>
+          </div>
+          <div class="mode-item" data-mode="type-pinyin" onclick="selectMode(this)">
+            <div class="mode-title">병음 입력</div>
+            <div class="mode-desc">직접 타이핑</div>
+          </div>
+          <div class="mode-item" data-mode="flashcard" onclick="selectMode(this)" style="grid-column:span 2">
+            <div class="mode-title">플래시카드</div>
+            <div class="mode-desc">카드 넘기며 전체 복습</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-start" onclick="startQuiz()" disabled>단어 세트를 선택해주세요</button>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quiz" class="screen">
+      <div class="quiz-header">
+        <button class="nav-back" onclick="show('home')">← 홈</button>
+        <span style="font-size:13px;color:var(--muted)" id="q-prog"></span>
+        <span style="font-size:13px;font-weight:600;color:var(--accent);font-family:var(--mono)"
+          id="q-score-disp"></span>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-fill" id="q-bar" style="width:0%"></div>
+      </div>
+
+      <div id="q-mc-wrap">
+        <div class="q-card">
+          <div class="q-label" id="q-label"></div>
+          <div class="q-main" id="q-main"></div>
+          <div class="q-sub" id="q-sub"></div>
+        </div>
+        <div class="options" id="q-opts"></div>
+        <div class="type-area" id="q-type-area" style="display:none">
+          <input type="text" class="type-input" id="q-type-inp" placeholder="병음을 입력하세요..."
+            onkeydown="if(event.key==='Enter') checkType()">
+          <button class="btn" onclick="checkType()">확인</button>
+        </div>
+        <div class="feedback" id="q-feedback"></div>
+        <button class="btn" id="q-next" style="display:none" onclick="nextQ()">다음 →</button>
+      </div>
+
+      <div id="q-flash-wrap" style="display:none">
+        <div class="flash-card" onclick="flipCard()">
+          <div class="q-label" id="flash-hint">탭하여 뒤집기</div>
+          <div class="q-main" id="flash-front"></div>
+          <div class="flash-back" id="flash-back">
+            <div class="flash-pinyin" id="flash-pinyin"></div>
+            <div class="flash-meaning" id="flash-meaning"></div>
+          </div>
+        </div>
+        <div class="flash-btns">
+          <button class="btn-err" onclick="flashResult(false)">몰랐어요</button>
+          <button class="btn-ok" onclick="flashResult(true)">알았어요</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="result" class="screen">
+      <button class="nav-back" onclick="show('home')">← 홈으로</button>
+      <div class="result-score" id="r-score"></div>
+      <div class="result-msg" id="r-msg"></div>
+      <div class="result-stats" id="r-stats"></div>
+      <div class="card">
+        <div class="card-title">전체 단어 복습</div>
+        <div class="review-list" id="r-review"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="btn" onclick="startQuiz()" style="flex:1">다시 풀기</button>
+        <button class="btn btn-sec" onclick="show('home')" style="flex:1">홈으로</button>
+      </div>
+    </div>
+
+  </div>
+  <script>
+    const FILES = [
+      '2과.csv',
+      '3과.csv',
+    ];
+    const BASE = './assets/files/';
+
+    // 상태
+    let fileSets = {}, selected = null, mode = 'mc-meaning';
+    let words = [], qList = [], qIdx = 0, correct = 0;
+    let flipped = false, flashKnown = 0, flashUnknown = 0;
+
+    // 유틸
+    const $ = id => document.getElementById(id);
+    const shuffle = a => [...a].sort(() => Math.random() - 0.5);
+    const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
+
+    function show(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      $(id).classList.add('active');
+    }
+
+    // CSV 파싱
+    function parseCSV(text) {
+      return text.trim().split(/\r?\n/).flatMap((row, i) => {
+        const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        if (i === 0 && /^[a-zA-Z가-힣]/.test(cols[0])) return [];
+        return cols.length >= 3 ? [{ hanzi: cols[0], pinyin: cols[1], meaning: cols[2] }] : [];
+      });
+    }
+
+    // 파일 로드
+    async function loadFiles() {
+      const results = await Promise.allSettled(
+        FILES.map(f => fetch(BASE + f).then(r => r.ok ? r.text() : Promise.reject()))
+      );
+
+      $('file-grid').innerHTML = results.map((res, i) => {
+        const name = FILES[i].replace(/\.csv$/i, '');
+        if (res.status === 'fulfilled') {
+          fileSets[FILES[i]] = parseCSV(res.value);
+          return `<div class="file-item" data-file="${FILES[i]}" onclick="selectFile(this)">
+        <div class="file-icon">CSV</div>
+        <div class="file-name">${name}</div>
+        <div class="file-count">${fileSets[FILES[i]].length}단어</div>
+        <div class="file-check"></div>
+      </div>`;
+        }
+        return `<div class="file-item" style="opacity:.4;cursor:not-allowed">
+      <div class="file-icon">—</div>
+      <div class="file-name" style="color:var(--muted)">${name}</div>
+      <div class="file-count" style="color:var(--err)">불러오기 실패</div>
+      <div class="file-check"></div>
+    </div>`;
+      }).join('');
+    }
+
+    function selectFile(el) {
+      document.querySelectorAll('.file-item').forEach(f => f.classList.remove('selected'));
+      el.classList.add('selected');
+      selected = el.dataset.file;
+      $('btn-start').disabled = false;
+      $('btn-start').textContent = '퀴즈 시작';
+    }
+
+    function selectMode(el) {
+      document.querySelectorAll('.mode-item').forEach(m => m.classList.remove('selected'));
+      el.classList.add('selected');
+      mode = el.dataset.mode;
+    }
+
+    // 퀴즈 시작
+    function startQuiz() {
+      if (!selected || !fileSets[selected]) return;
+      words = fileSets[selected];
+      if (words.length < 2) return alert('단어가 2개 이상 있어야 함.');
+      qList = shuffle(words);
+      qIdx = 0; correct = 0; flashKnown = 0; flashUnknown = 0;
+      show('quiz');
+      renderQ();
+    }
+
+    // 문제 렌더
+    const MODE_CFG = {
+      'mc-meaning': w => ({ label: '한자를 보고 뜻을 고르세요', main: w.hanzi, sub: w.pinyin, getVal: x => x.meaning, answer: w.meaning }),
+      'mc-pinyin': w => ({ label: '한자를 보고 병음을 고르세요', main: w.hanzi, sub: w.meaning, getVal: x => x.pinyin, answer: w.pinyin }),
+      'mc-hanzi': w => ({ label: '뜻을 보고 한자를 고르세요', main: w.meaning, sub: '', getVal: x => x.hanzi, answer: w.hanzi }),
+      'type-pinyin': w => ({ label: '한자를 보고 병음을 입력하세요', main: w.hanzi, sub: w.meaning }),
+    };
+
+    function renderQ() {
+      $('q-prog').textContent = `${qIdx + 1} / ${qList.length}`;
+      $('q-score-disp').textContent = `${correct} 정답`;
+      $('q-bar').style.width = `${(qIdx / qList.length) * 100}%`;
+      $('q-feedback').style.display = 'none';
+      $('q-next').style.display = 'none';
+
+      if (mode === 'flashcard') return renderFlash();
+
+      $('q-mc-wrap').style.display = 'block';
+      $('q-flash-wrap').style.display = 'none';
+
+      const w = qList[qIdx];
+      const cfg = MODE_CFG[mode](w);
+      const isType = mode === 'type-pinyin';
+
+      $('q-label').textContent = cfg.label;
+      $('q-main').textContent = cfg.main;
+      $('q-sub').textContent = cfg.sub;
+      $('q-opts').style.display = isType ? 'none' : 'grid';
+      $('q-type-area').style.display = isType ? 'block' : 'none';
+
+      if (isType) {
+        const inp = $('q-type-inp');
+        inp.value = ''; inp.className = 'type-input'; inp.disabled = false;
+        setTimeout(() => inp.focus(), 50);
+        return;
+      }
+
+      const choices = shuffle([w, ...shuffle(words.filter(x => x.hanzi !== w.hanzi)).slice(0, 3)]);
+      $('q-opts').innerHTML = choices.map(c => {
+        const val = cfg.getVal(c);
+        return `<button class="opt" onclick="checkMC(this,'${val.replace(/'/g, "\\'")}','${cfg.answer.replace(/'/g, "\\'")}')">${val}</button>`;
+      }).join('');
+    }
+
+    function checkMC(btn, chosen, answer) {
+      document.querySelectorAll('.opt').forEach(b => b.disabled = true);
+      const ok = chosen === answer;
+      if (ok) correct++;
+      btn.classList.add(ok ? 'correct' : 'wrong');
+      if (!ok) document.querySelectorAll('.opt').forEach(b => { if (b.textContent.trim() === answer) b.classList.add('correct'); });
+      const w = qList[qIdx];
+      feedback(ok, ok ? `정답! ${w.hanzi} [${w.pinyin}] = ${w.meaning}` : `오답. 정답: ${answer}  |  ${w.hanzi} [${w.pinyin}] = ${w.meaning}`);
+    }
+
+    function checkType() {
+      const inp = $('q-type-inp');
+      const w = qList[qIdx];
+      const ok = norm(inp.value) === norm(w.pinyin);
+      if (ok) correct++;
+      inp.disabled = true;
+      inp.classList.add(ok ? 'correct' : 'wrong');
+      feedback(ok, ok ? `정답! [${w.pinyin}] = ${w.meaning}` : `오답. 정답: ${w.pinyin}`);
+    }
+
+    function feedback(ok, text) {
+      const fb = $('q-feedback');
+      fb.className = `feedback ${ok ? 'correct' : 'wrong'}`;
+      fb.textContent = text;
+      fb.style.display = 'block';
+      $('q-next').style.display = 'block';
+    }
+
+    function nextQ() {
+      if (++qIdx >= qList.length) return showResult();
+      renderQ();
+    }
+
+    // 플래시카드
+    function renderFlash() {
+      $('q-mc-wrap').style.display = 'none';
+      $('q-flash-wrap').style.display = 'block';
+      flipped = false;
+      const w = qList[qIdx];
+      $('flash-front').textContent = w.hanzi;
+      $('flash-pinyin').textContent = w.pinyin;
+      $('flash-meaning').textContent = w.meaning;
+      $('flash-back').style.display = 'none';
+      $('flash-hint').textContent = '탭하여 뒤집기';
+      $('q-prog').textContent = `${qIdx + 1} / ${qList.length}`;
+      $('q-score-disp').textContent = `알았어요 ${flashKnown}`;
+    }
+
+    function flipCard() {
+      if (flipped) return;
+      flipped = true;
+      $('flash-back').style.display = 'block';
+      $('flash-hint').textContent = '알고 있었나요?';
+    }
+
+    function flashResult(known) {
+      if (!flipped) return flipCard();
+      if (known) flashKnown++; else flashUnknown++;
+      if (++qIdx >= qList.length) { correct = flashKnown; return showResult(); }
+      renderFlash();
+    }
+
+    // 결과
+    const MSGS = ['조금 더 연습해봐요', '절반 왔어요', '잘 하고 있어요', '거의 다 왔어요', '완벽해요'];
+
+    function showResult() {
+      show('result');
+      $('q-bar').style.width = '100%';
+      const total = qList.length;
+      const pct = Math.round((correct / total) * 100);
+      $('r-score').textContent = `${correct}/${total}`;
+      $('r-msg').textContent = `정답률 ${pct}%  ·  ${MSGS[Math.min(4, Math.floor(pct / 20))]}`;
+
+      const [aNum, aLbl, bNum, bLbl] = mode === 'flashcard'
+        ? [flashKnown, '알았어요', flashUnknown, '몰랐어요']
+        : [correct, '정답', total - correct, '오답'];
+      $('r-stats').innerHTML = `
+    <div class="stat-box ok"><div class="stat-num">${aNum}</div><div class="stat-lbl">${aLbl}</div></div>
+    <div class="stat-box err"><div class="stat-num">${bNum}</div><div class="stat-lbl">${bLbl}</div></div>`;
+
+      $('r-review').innerHTML = words.map(w =>
+        `<div class="review-item"><span>${w.hanzi}</span><span>${w.pinyin}</span><span>${w.meaning}</span></div>`
+      ).join('');
+    }
+
+    loadFiles();
+  </script>
+</body>
+
+</html>
