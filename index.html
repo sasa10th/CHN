@@ -521,6 +521,9 @@
       padding: 14px;
       border-radius: var(--r);
       text-align: center;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s;
     }
 
     .stat-box.ok {
@@ -531,6 +534,32 @@
     .stat-box.err {
       background: var(--err-lt);
       color: var(--err);
+    }
+
+    .stat-box.ok:hover {
+      background: #D5EDE5;
+    }
+
+    .stat-box.err:hover {
+      background: #FADFDA;
+    }
+
+    .stat-box.ok.active {
+      border-color: var(--ok);
+    }
+
+    .stat-box.err.active {
+      border-color: var(--err);
+    }
+
+    .review-filter-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      transition: color 0.15s;
     }
 
     .stat-num {
@@ -558,6 +587,14 @@
       background: var(--bg);
       border-radius: var(--r);
       font-size: 13px;
+    }
+
+    .review-item.ok {
+      border-left: 3px solid var(--ok);
+    }
+
+    .review-item.err {
+      border-left: 3px solid var(--err);
     }
 
     .review-item span:nth-child(1) {
@@ -684,11 +721,12 @@
       <div class="result-msg" id="r-msg"></div>
       <div class="result-stats" id="r-stats"></div>
       <div class="card">
-        <div class="card-title">전체 단어 복습</div>
+        <div class="review-filter-label" id="r-filter-label">전체 단어 복습</div>
         <div class="review-list" id="r-review"></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:1rem">
+      <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
         <button class="btn" onclick="startQuiz()" style="flex:1">다시 풀기</button>
+        <button class="btn btn-sec" id="btn-retry-wrong" onclick="retryWrong()" style="flex:1;display:none">오답 다시 풀기</button>
         <button class="btn btn-sec" onclick="show('home')" style="flex:1">홈으로</button>
       </div>
     </div>
@@ -705,6 +743,8 @@
     let fileSets = {}, selected = null, mode = 'mc-meaning';
     let words = [], qList = [], qIdx = 0, correct = 0;
     let flipped = false, flashKnown = 0, flashUnknown = 0;
+    let correctWords = [], wrongWords = [];
+    let reviewFilter = 'all';
 
     // 유틸
     const $ = id => document.getElementById(id);
@@ -772,6 +812,7 @@
       if (words.length < 2) return alert('단어가 2개 이상 있어야 함.');
       qList = shuffle(words);
       qIdx = 0; correct = 0; flashKnown = 0; flashUnknown = 0;
+      correctWords = []; wrongWords = [];
       show('quiz');
       renderQ();
     }
@@ -823,10 +864,10 @@
     function checkMC(btn, chosen, answer) {
       document.querySelectorAll('.opt').forEach(b => b.disabled = true);
       const ok = chosen === answer;
-      if (ok) correct++;
+      const w = qList[qIdx];
+      if (ok) { correct++; correctWords.push(w); } else { wrongWords.push(w); }
       btn.classList.add(ok ? 'correct' : 'wrong');
       if (!ok) document.querySelectorAll('.opt').forEach(b => { if (b.textContent.trim() === answer) b.classList.add('correct'); });
-      const w = qList[qIdx];
       feedback(ok, ok ? `정답! ${w.hanzi} [${w.pinyin}] = ${w.meaning}` : `오답. 정답: ${answer}  |  ${w.hanzi} [${w.pinyin}] = ${w.meaning}`);
     }
 
@@ -834,7 +875,7 @@
       const inp = $('q-type-inp');
       const w = qList[qIdx];
       const ok = norm(inp.value) === norm(w.pinyin);
-      if (ok) correct++;
+      if (ok) { correct++; correctWords.push(w); } else { wrongWords.push(w); }
       inp.disabled = true;
       inp.classList.add(ok ? 'correct' : 'wrong');
       feedback(ok, ok ? `정답! [${w.pinyin}] = ${w.meaning}` : `오답. 정답: ${w.pinyin}`);
@@ -877,7 +918,8 @@
 
     function flashResult(known) {
       if (!flipped) return flipCard();
-      if (known) flashKnown++; else flashUnknown++;
+      const w = qList[qIdx];
+      if (known) { flashKnown++; correctWords.push(w); } else { flashUnknown++; wrongWords.push(w); }
       if (++qIdx >= qList.length) { correct = flashKnown; return showResult(); }
       renderFlash();
     }
@@ -887,6 +929,7 @@
 
     function showResult() {
       show('result');
+      reviewFilter = 'all';
       $('q-bar').style.width = '100%';
       const total = qList.length;
       const pct = Math.round((correct / total) * 100);
@@ -896,13 +939,63 @@
       const [aNum, aLbl, bNum, bLbl] = mode === 'flashcard'
         ? [flashKnown, '알았어요', flashUnknown, '몰랐어요']
         : [correct, '정답', total - correct, '오답'];
-      $('r-stats').innerHTML = `
-    <div class="stat-box ok"><div class="stat-num">${aNum}</div><div class="stat-lbl">${aLbl}</div></div>
-    <div class="stat-box err"><div class="stat-num">${bNum}</div><div class="stat-lbl">${bLbl}</div></div>`;
 
-      $('r-review').innerHTML = words.map(w =>
-        `<div class="review-item"><span>${w.hanzi}</span><span>${w.pinyin}</span><span>${w.meaning}</span></div>`
+      $('r-stats').innerHTML = `
+        <div class="stat-box ok" id="stat-ok" onclick="setReviewFilter('ok')">
+          <div class="stat-num">${aNum}</div><div class="stat-lbl">${aLbl}</div>
+        </div>
+        <div class="stat-box err" id="stat-err" onclick="setReviewFilter('err')">
+          <div class="stat-num">${bNum}</div><div class="stat-lbl">${bLbl}</div>
+        </div>`;
+
+      // 오답 다시 풀기 버튼 표시 여부
+      $('btn-retry-wrong').style.display = wrongWords.length > 0 ? 'block' : 'none';
+
+      renderReview('all');
+    }
+
+    function setReviewFilter(filter) {
+      // 같은 카드 다시 누르면 전체로 토글
+      if (reviewFilter === filter) filter = 'all';
+      reviewFilter = filter;
+      renderReview(filter);
+
+      // 카드 active 표시
+      ['ok', 'err'].forEach(t => {
+        const el = $(`stat-${t}`);
+        if (el) el.classList.toggle('active', filter === t);
+      });
+    }
+
+    function renderReview(filter) {
+      const labelMap = { all: '전체 단어 복습', ok: '✓ 정답 단어', err: '✗ 오답 단어' };
+      $('r-filter-label').textContent = labelMap[filter];
+
+      let list;
+      if (filter === 'ok') list = correctWords;
+      else if (filter === 'err') list = wrongWords;
+      else list = words;
+
+      if (list.length === 0) {
+        $('r-review').innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:13px">해당 단어가 없습니다</div>`;
+        return;
+      }
+
+      const cls = filter === 'all' ? '' : filter;
+      $('r-review').innerHTML = list.map(w =>
+        `<div class="review-item ${cls}"><span>${w.hanzi}</span><span>${w.pinyin}</span><span>${w.meaning}</span></div>`
       ).join('');
+    }
+
+    function retryWrong() {
+      if (!wrongWords.length) return;
+      // 오답 단어로만 재시작
+      words = [...wrongWords];
+      qList = shuffle(words);
+      qIdx = 0; correct = 0; flashKnown = 0; flashUnknown = 0;
+      correctWords = []; wrongWords = [];
+      show('quiz');
+      renderQ();
     }
 
     loadFiles();
